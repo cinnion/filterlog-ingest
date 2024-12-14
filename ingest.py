@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import re
@@ -5,7 +7,7 @@ import json
 import psycopg2
 from dotenv import load_dotenv
 
-class filterlog():
+class FilterLog:
 
     conn = None
 
@@ -37,10 +39,10 @@ class filterlog():
         rest.pop(0)
 
     def digest_datalength(self, rec, rest):
-        '''
+        """
         Verify that we have only one item remaining, and that it is a "datalength=X"
         value, and if so, stash the value.
-        '''
+        """
         rest_dict = {}
         if len(rest) != 1 and rest[0][:11] != 'datalength=':
             raise Exception("Unexpected rest of record: {0}".format(json.dumps(rest)))
@@ -142,6 +144,8 @@ class filterlog():
             rest_dict = self.digest_tcp(rec, rest)
         elif rec['protocol'] == 'udp':
             rest_dict = self.digest_udp(rec, rest)
+        elif rec['protocol'] == 'esp':
+            rest_dict = self.digest_datalength(rec, rest)
         elif rec['protocol'] == 'gre':
             rest_dict = self.digest_datalength(rec,rest)
         elif rec['protocol'] == 'ipv6':
@@ -236,10 +240,8 @@ class filterlog():
                                 )
                     self.conn.commit()
         except Exception as e:
-            print("Error saving record {0}: {1}".format(lineno, e), file=sys.stderr)
-            print("Line: {0}".format(line), file=sys.stderr)
-            print("")
-
+            self.conn.rollback()
+            raise Exception("Error saving IPv4 record") from e
 
     def digest_ipv6(self, rec, rest):
 
@@ -253,18 +255,96 @@ class filterlog():
         rec['dest_ip'] = rest.pop(0)
 
         if rec['protocol'] == 'tcp':
-            self.digest_tcp(rec, rest)
+            rest_dict = self.digest_tcp(rec, rest)
         elif rec['protocol'] == 'udp':
-            self.digest_udp(rec, rest)
+            rest_dict = self.digest_udp(rec, rest)
         elif rec['protocol'] == 'ipv6-icmp':
-            self.digest_empty(rec, rest)
+            rest_dict = self.digest_empty(rec, rest)
         else:
             raise Exception('Unknown IPv6 protocol: {0}'.format(rec['protocol']))
 
+        try:
+            rest_json = json.dumps(rest_dict)
+            if self.conn is not None:
+                with self.conn.cursor() as curs:
+                    curs.execute('''
+                INSERT INTO filterlog (
+                    timestamp, 
+                    hostname, 
+                    rule_num, 
+                    sub_rule,
+                    anchor,
+                    tracker,
+                    interface,
+                    reason,
+                    action,
+                    direction,
+                    ip_version,
+                    pkt_class,
+                    flow_label,
+                    hop_limit,
+                    proto_id,
+                    protocol,
+                    pkt_length,
+                    source_ip,
+                    dest_ip,
+                    rest                    
+                ) VALUES (
+                    %(timestamp)s, 
+                    %(hostname)s, 
+                    %(rule_num)s, 
+                    %(sub_rule)s,
+                    %(anchor)s,
+                    %(tracker)s,
+                    %(interface)s,
+                    %(reason)s,
+                    %(action)s,
+                    %(direction)s,
+                    %(ip_version)s,
+                    %(class)s,
+                    %(flow_label)s,
+                    %(hop_limit)s,
+                    %(proto_id)s,
+                    %(protocol)s,
+                    %(pkt_length)s,
+                    %(source_ip)s,
+                    %(dest_ip)s,
+                    %(rest_json)s
+                );                   
+            ''',
+                                {
+                                    'timestamp': rec['date'],
+                                    'hostname': rec['host'],
+                                    'rule_num': rec['rule_num'],
+                                    'sub_rule': rec['sub_rule'],
+                                    'anchor': rec['anchor'],
+                                    'tracker': rec['tracker'],
+                                    'interface': rec['interface'],
+                                    'reason': rec['reason'],
+                                    'action': rec['action'],
+                                    'direction': rec['direction'],
+                                    'ip_version': rec['ip_version'],
+                                    'class': rec['class'],
+                                    'flow_label': rec['flow_label'],
+                                    'hop_limit': rec['hop_limit'],
+                                    'proto_id': rec['proto_id'],
+                                    'protocol': rec['protocol'],
+                                    'pkt_length': rec['length'],
+                                    'source_ip': rec['source_ip'],
+                                    'dest_ip': rec['dest_ip'],
+                                    'rest_json': rest_json
+                                }
+                                )
+                    self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            raise Exception("Error saving IPv6 record") from e
+
+
     def digest_filterlog(self, date, host, rest):
-        '''
+        """
         Digest a filterlog entry
-        '''
+        """
         rec = { 'date': date, 'host': host }
 
         x = rest.split(',')
@@ -292,31 +372,39 @@ class filterlog():
 
         return rec
 
-def digest(flog, line):
-    '''
-    Digest a line which is in syslog RFC5424 format, initially pulling off the date/host.
-    '''
-    m = re.search(r'^(\S+) (\S+) filterlog\[\d+] (.*)', line)
-    if m is None:
-        raise Exception("Unknown record type for record")
 
-    date = m.group(1)
-    host = m.group(2)
+    def digest(self, line):
+        """
+        Digest a line which is in syslog RFC5424 format, initially pulling off the date/host.
+        """
+        m = re.search(r'^(\S+) (\S+) filterlog\[\d+] (.*)', line)
+        if m is None:
+            raise Exception("Unknown record type for record")
 
-    rec = flog.digest_filterlog(date, host, m.group(3))
+        date = m.group(1)
+        host = m.group(2)
 
-    return rec
+        rec = self.digest_filterlog(date, host, m.group(3))
 
-flog = filterlog()
-with open("/var/logsafe/alpha-filterlog", "r") as fp:
-    for lineno, line in enumerate(fp):
+        return rec
+
+
+if __name__ == '__main__':
+    flog = FilterLog()
+
+    lineno = 0
+    for line in sys.stdin:
         try:
-            rec = digest(flog, line)
+            line.rstrip('\n')
+            lineno = lineno + 1
+            rec = flog.digest(line)
             # if rec['action'] == 'block':
             #     print("{0}".format(json.dumps(rec)))
         except Exception as e:
-            print("Error parsing record {0}: {1}".format(lineno, e), file=sys.stderr)
+            print("Error parsing record: {0}".format(e), file=sys.stderr)
+            if e.__cause__:
+                print("Error caused by: {0}".format(e.__cause__), file=sys.stderr)
             print("Line: {0}".format(line), file=sys.stderr)
             print("")
 
-    print("Total of {0} lines digested".format(lineno-1), file=sys.stderr)
+    print("Total of {0} lines digested".format(lineno), file=sys.stderr)
