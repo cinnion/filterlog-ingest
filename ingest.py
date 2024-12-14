@@ -14,7 +14,7 @@ class FilterLog:
     cursor = None
 
     def __init__(self):
-        load_dotenv('.heimdallr')
+        load_dotenv('/root/.heimdallr.env')
 
         # logging.basicConfig(level=logging.DEBUG)
         # logger = logging.getLogger('digest-filterlog')
