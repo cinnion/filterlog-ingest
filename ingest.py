@@ -1,23 +1,49 @@
 #!/usr/bin/env python3
+"""
+ingest -- A utility to ingest a SYSLOG stream from OPNSense's filterlog
 
+This utility ingests RFC 5424 formatted records from SYSLOG, and where those
+records are from filterlog, they are digested and stored in a database.
+
+@author:     Doug Needham
+
+@copyright:  2024 Doug Needham. All rights reserved.
+
+@license:    BSD-3-Clause
+
+@contact:    cinnion@gmail.com
+@deffield    updated: Updated
+"""
 import os
 import sys
 import re
 import json
 import psycopg2
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
+import dotenv
+
+from argparse import ArgumentParser  # as originalArgumentParser
+from argparse import ArgumentError
+from argparse import RawDescriptionHelpFormatter
+from argparse import SUPPRESS
+
+__version__ = 1.0
+__date__ = '2024-12-28'
+__updated__ = '2024-12-28'
+
+DEBUG = 1
+TESTRUN = 0
+PROFILE = 0
 
 
 class FilterLog:
     conn = None
 
-    cursor = None
+    def __init__(self, envfile=None):
+        if envfile is None:
+            envfile = '/root/.heimdallr.env'
 
-    def __init__(self):
-        load_dotenv('/root/.heimdallr.env')
-
-        # logging.basicConfig(level=logging.DEBUG)
-        # logger = logging.getLogger('digest-filterlog')
+        dotenv.load_dotenv(envfile)
 
         db_settings = {
             'dbname': os.getenv('DATABASE_NAME'),
@@ -29,16 +55,14 @@ class FilterLog:
 
         self.conn = psycopg2.connect(**db_settings)
 
-        # self.cursor = self.conn.cursor()
-
-    def digest_empty(self, rec, rest):
+    def digest_empty(self, _rec, rest):
 
         if len(rest) != 1 and rest[0] != '':
             raise Exception("Unexpected rest of record: {0}".format(json.dumps(rest)))
 
         rest.pop(0)
 
-    def digest_datalength(self, rec, rest):
+    def digest_datalength(self, _rec, rest):
         """
         Verify that we have only one item remaining, and that it is a "datalength=X"
         value, and if so, stash the value.
@@ -75,7 +99,7 @@ class FilterLog:
         rest_dict = self.digest_tcpudp(rec, rest)
         return rest_dict
 
-    def digest_igmp(self, rec, rest):
+    def digest_igmp(self, _rec, rest):
 
         if len(rest) != 1:
             raise Exception("Unexpected IGMP record data: {0}".format(json.dumps(rest)))
@@ -387,22 +411,91 @@ class FilterLog:
         return rec
 
 
+def main():
+    program_name = os.path.basename(sys.argv[0])
+    program_version = "v%s" % __version__
+    program_build_date = str(__updated__)
+    program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
+    program_shortdesc = __import__('__main__').__doc__.split("\n")[1]
+    program_license = '''%s
+
+  Created by Doug Needham on %s.
+  Copyright (c) 2024 Doug Needham
+
+  This program and the accompanying materials are made
+  available under the terms of the BSD 3-Clause License
+  which is available at https://opensource.org/licenses/BSD-3-Clause
+
+  SPDX-License-Identifier: BSD-3-Clause
+
+USAGE
+''' % (program_shortdesc, str(__date__))
+
+    try:
+        # Setup argument parser
+        parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter,
+                                add_help=False)
+        parser.add_argument('-h', '--help', action='help', default=SUPPRESS, help='show this help message and exit')
+        parser.add_argument('-V', '--version', action='version', version=program_version_message)
+
+        parser.add_argument(dest='envfile',
+                            help='path to the environment file with the database configuration [default: %(default)s]',
+                            nargs='?',
+                            metavar='envfile')
+
+        # Process arguments
+        args = parser.parse_args()
+
+        flog = FilterLog(args.envfile)
+
+        lineno = 0
+        for line in sys.stdin:
+            try:
+                line.rstrip('\n')
+                lineno = lineno + 1
+                flog.digest(line)
+            except KeyboardInterrupt:
+                ### handle keyboard interrupt ###
+                break
+
+            except Exception as e:
+                print("Error parsing record: {0}".format(e), file=sys.stderr)
+                if e.__cause__:
+                    print("Error caused by: {0}".format(e.__cause__), file=sys.stderr)
+                print("Line: {0}".format(line), file=sys.stderr)
+                print("")
+
+        print("Total of {0} lines digested".format(lineno), file=sys.stderr)
+
+    except ArgumentError as e:
+        ### Return 3 after printing the Unknown service status ###
+        print(str(e))
+        return 3
+
+    except Exception as e:
+        if DEBUG or TESTRUN:
+            raise e
+        indent = len(program_name) * " "
+        sys.stderr.write(program_name + ": " + repr(e) + "\n")
+        sys.stderr.write(indent + "  for help use --help")
+        return 3
+
+
 if __name__ == '__main__':
-    flog = FilterLog()
+    if TESTRUN:
+        import doctest
 
-    lineno = 0
-    for line in sys.stdin:
-        try:
-            line.rstrip('\n')
-            lineno = lineno + 1
-            rec = flog.digest(line)
-            # if rec['action'] == 'block':
-            #     print("{0}".format(json.dumps(rec)))
-        except Exception as e:
-            print("Error parsing record: {0}".format(e), file=sys.stderr)
-            if e.__cause__:
-                print("Error caused by: {0}".format(e.__cause__), file=sys.stderr)
-            print("Line: {0}".format(line), file=sys.stderr)
-            print("")
+        doctest.testmod()
+    if PROFILE:
+        import cProfile
+        import pstats
 
-    print("Total of {0} lines digested".format(lineno), file=sys.stderr)
+        profile_filename = '_profile.txt'
+        cProfile.run('main()', profile_filename)
+        statsfile = open("profile_stats.txt", "wb")
+        p = pstats.Stats(profile_filename, stream=statsfile)
+        stats = p.strip_dirs().sort_stats('cumulative')
+        stats.print_stats()
+        statsfile.close()
+        sys.exit(0)
+    sys.exit(main())
