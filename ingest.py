@@ -40,8 +40,6 @@ class FilterLog:
     conn = None
 
     def __init__(self, envfile=None):
-        if envfile is None:
-            envfile = '/root/.heimdallr.env'
 
         dotenv.load_dotenv(envfile)
 

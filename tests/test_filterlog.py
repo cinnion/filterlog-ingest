@@ -7,7 +7,7 @@ from ingest import FilterLog
 
 class TestFilterLog:
 
-    def test_initDefaultPath_loadDotenvDefaultFromRoot(self, mocker):
+    def test_initDefaultPath_loadDotenvDefaultDoesSearch(self, mocker):
         # Setup
         mocked_load_dotenv = mocker.patch('dotenv.load_dotenv')
         mocked_connect = mocker.patch('psycopg2.connect')
@@ -16,7 +16,7 @@ class TestFilterLog:
         flog = FilterLog()
 
         # Assert
-        mocked_load_dotenv.assert_called_once_with('/root/.heimdallr.env')
+        mocked_load_dotenv.assert_called_once_with(None)
 
     def test_initEnvSpecified_loadDotenvCalledWithSpecifiedEnv(self, mocker):
         # Setup
@@ -42,7 +42,7 @@ class TestFilterLog:
 
         # Act
         with pytest.raises(psycopg2.OperationalError):
-            FilterLog()
+            FilterLog('/tmp/junkenv')
 
         # Assert
 
