@@ -7,8 +7,8 @@ import json
 import psycopg2
 from dotenv import load_dotenv
 
-class FilterLog:
 
+class FilterLog:
     conn = None
 
     cursor = None
@@ -21,7 +21,7 @@ class FilterLog:
 
         db_settings = {
             'dbname': os.getenv('DATABASE_NAME'),
-            'user':  os.getenv('DATABASE_USER'),
+            'user': os.getenv('DATABASE_USER'),
             'password': os.getenv('DATABASE_PASSWORD'),
             'host': os.getenv('DATABASE_HOST'),
             'port': os.getenv('DATABASE_PORT'),
@@ -29,7 +29,7 @@ class FilterLog:
 
         self.conn = psycopg2.connect(**db_settings)
 
-        #self.cursor = self.conn.cursor()
+        # self.cursor = self.conn.cursor()
 
     def digest_empty(self, rec, rest):
 
@@ -147,9 +147,9 @@ class FilterLog:
         elif rec['protocol'] == 'esp':
             rest_dict = self.digest_datalength(rec, rest)
         elif rec['protocol'] == 'gre':
-            rest_dict = self.digest_datalength(rec,rest)
+            rest_dict = self.digest_datalength(rec, rest)
         elif rec['protocol'] == 'ipv6':
-            rest_dict = self.digest_datalength(rec,rest)
+            rest_dict = self.digest_datalength(rec, rest)
         elif rec['protocol'] == 'igmp':
             rest_dict = self.digest_datalength(rec, rest)
         elif rec['protocol'] == 'icmp':
@@ -212,32 +212,32 @@ class FilterLog:
                     %(rest_json)s
                 );                   
             ''',
-                                {
-                                    'timestamp': rec['date'],
-                                    'hostname': rec['host'],
-                                    'rule_num': rec['rule_num'],
-                                    'sub_rule': rec['sub_rule'],
-                                    'anchor': rec['anchor'],
-                                    'tracker': rec['tracker'],
-                                    'interface': rec['interface'],
-                                    'reason': rec['reason'],
-                                    'action': rec['action'],
-                                    'direction': rec['direction'],
-                                    'ip_version': rec['ip_version'],
-                                    'tos': rec['tos'],
-                                    'ecn': rec['ecn'],
-                                    'ttl': rec['ttl'],
-                                    'pkt_id': rec['id'],
-                                    'offset': rec['offset'],
-                                    'flags': rec['flags'],
-                                    'proto_id': rec['proto_id'],
-                                    'protocol': rec['protocol'],
-                                    'pkt_length': rec['length'],
-                                    'source_ip': rec['source_ip'],
-                                    'dest_ip': rec['dest_ip'],
-                                    'rest_json': rest_json
-                                }
-                                )
+                                 {
+                                     'timestamp': rec['date'],
+                                     'hostname': rec['host'],
+                                     'rule_num': rec['rule_num'],
+                                     'sub_rule': rec['sub_rule'],
+                                     'anchor': rec['anchor'],
+                                     'tracker': rec['tracker'],
+                                     'interface': rec['interface'],
+                                     'reason': rec['reason'],
+                                     'action': rec['action'],
+                                     'direction': rec['direction'],
+                                     'ip_version': rec['ip_version'],
+                                     'tos': rec['tos'],
+                                     'ecn': rec['ecn'],
+                                     'ttl': rec['ttl'],
+                                     'pkt_id': rec['id'],
+                                     'offset': rec['offset'],
+                                     'flags': rec['flags'],
+                                     'proto_id': rec['proto_id'],
+                                     'protocol': rec['protocol'],
+                                     'pkt_length': rec['length'],
+                                     'source_ip': rec['source_ip'],
+                                     'dest_ip': rec['dest_ip'],
+                                     'rest_json': rest_json
+                                 }
+                                 )
                     self.conn.commit()
         except Exception as e:
             self.conn.rollback()
@@ -312,40 +312,39 @@ class FilterLog:
                     %(rest_json)s
                 );                   
             ''',
-                                {
-                                    'timestamp': rec['date'],
-                                    'hostname': rec['host'],
-                                    'rule_num': rec['rule_num'],
-                                    'sub_rule': rec['sub_rule'],
-                                    'anchor': rec['anchor'],
-                                    'tracker': rec['tracker'],
-                                    'interface': rec['interface'],
-                                    'reason': rec['reason'],
-                                    'action': rec['action'],
-                                    'direction': rec['direction'],
-                                    'ip_version': rec['ip_version'],
-                                    'class': rec['class'],
-                                    'flow_label': rec['flow_label'],
-                                    'hop_limit': rec['hop_limit'],
-                                    'proto_id': rec['proto_id'],
-                                    'protocol': rec['protocol'],
-                                    'pkt_length': rec['length'],
-                                    'source_ip': rec['source_ip'],
-                                    'dest_ip': rec['dest_ip'],
-                                    'rest_json': rest_json
-                                }
-                                )
+                                 {
+                                     'timestamp': rec['date'],
+                                     'hostname': rec['host'],
+                                     'rule_num': rec['rule_num'],
+                                     'sub_rule': rec['sub_rule'],
+                                     'anchor': rec['anchor'],
+                                     'tracker': rec['tracker'],
+                                     'interface': rec['interface'],
+                                     'reason': rec['reason'],
+                                     'action': rec['action'],
+                                     'direction': rec['direction'],
+                                     'ip_version': rec['ip_version'],
+                                     'class': rec['class'],
+                                     'flow_label': rec['flow_label'],
+                                     'hop_limit': rec['hop_limit'],
+                                     'proto_id': rec['proto_id'],
+                                     'protocol': rec['protocol'],
+                                     'pkt_length': rec['length'],
+                                     'source_ip': rec['source_ip'],
+                                     'dest_ip': rec['dest_ip'],
+                                     'rest_json': rest_json
+                                 }
+                                 )
                     self.conn.commit()
         except Exception as e:
             self.conn.rollback()
             raise Exception("Error saving IPv6 record") from e
 
-
     def digest_filterlog(self, date, host, rest):
         """
         Digest a filterlog entry
         """
-        rec = { 'date': date, 'host': host }
+        rec = {'date': date, 'host': host}
 
         x = rest.split(',')
 
@@ -371,7 +370,6 @@ class FilterLog:
             raise Exception("Incomplete parsing")
 
         return rec
-
 
     def digest(self, line):
         """
