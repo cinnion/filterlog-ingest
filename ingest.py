@@ -66,7 +66,7 @@ class FilterLog:
         value, and if so, stash the value.
         """
         rest_dict = {}
-        if len(rest) != 1 and rest[0][:11] != 'datalength=':
+        if len(rest) != 1 or rest[0][:11] != 'datalength=':
             raise Exception("Unexpected rest of record: {0}".format(json.dumps(rest)))
 
         x = rest.pop(0)
