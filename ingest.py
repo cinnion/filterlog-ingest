@@ -97,57 +97,6 @@ class FilterLog:
         rest_dict = self.digest_tcpudp(rec, rest)
         return rest_dict
 
-    def digest_igmp(self, _rec, rest):
-
-        if len(rest) != 1:
-            raise Exception("Unexpected IGMP record data: {0}".format(json.dumps(rest)))
-
-    def digest_icmp(self, rec, rest):
-
-        rec['icmp_type'] = rest.pop(0)
-
-    def digest_icmp_echo_reply(self, rec, rest):
-
-        rec['icmp_id'] = rest.pop(0)
-        rec['icmp_seq'] = rest.pop(0)
-
-    def digest_icmp_proto_unreachable(self, rec, rest):
-
-        rec['icmp_dest_ip'] = rest.pop(0)
-        rec['icmp_proto_id'] = rest.pop(0)
-
-    def digest_icmp_port_unreachable(self, rec, rest):
-
-        rec['icmp_dest_ip'] = rest.pop(0)
-        rec['icmp_proto_id'] = rest.pop(0)
-        rec['icmp_port'] = rest.pop(0)
-
-    def digest_icmp_unreachable(self, rec, rest):
-
-        rec['icmp_description'] = rest.pop(0)
-
-    def digest_icmp_need_frag(self, rec, rest):
-
-        rec['icmp_dest_id'] = rest.pop(0)
-        rec['icmp_mtu'] = rest.pop(0)
-
-    def digest_icmp_tstamp(self, rec, rest):
-
-        rec['icmp_id'] = rest.pop(0)
-        rec['icmp_seq'] = rest.pop(0)
-
-    def digest_icmp_tstamp_reply(self, rec, rest):
-
-        rec['icmp_id'] = rest.pop(0)
-        rec['icmp_seq'] = rest.pop(0)
-        rec['icmp_otime'] = rest.pop(0)
-        rec['icmp_rtime'] = rest.pop(0)
-        rec['icmp_ttime'] = rest.pop(0)
-
-    def icmp_default(self, rec, rest):
-
-        rec['icmp_description'] = rest.pop(0)
-
     def digest_ipv4(self, rec, rest):
 
         rec['tos'] = rest.pop(0)

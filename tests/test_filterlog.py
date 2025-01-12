@@ -70,7 +70,6 @@ class TestFilterLogInit:
 class TestFilterLog:
     @pytest.fixture(autouse=True, scope="function")
     def setup_function(self, mocker):
-        print("Setup...")
         self.obj = FilterLog()
 
     def test_digestEmpty_isEmpty_zeroLenReturned(self):
@@ -200,8 +199,8 @@ class TestFilterLog:
         assert rec == expected_rec
         assert ret == expected_ret
 
-    def test_digestIPv4_tcp_movesData(self, mocker):
-        # Arrange
+    @pytest.fixture(scope="function")
+    def setup_ip_rec_and_db_mock(self, mocker):
         rec = {'date': 'mydate',
                'host': 'myhost',
                'rule_num': 'myrulenum',
@@ -214,11 +213,8 @@ class TestFilterLog:
                'direction': 'mydirection',
                'ip_version': 'myipversion'
                }
-        rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'tcp', 'mylen', 'mysourceip',
-                'mydestip', 'mysport', 'mydport', 'mydatalen', 'mytcpflags', 'myseq', 'myack', 'mywindow', 'myurg',
-                'options']
 
-        expected_rec = {
+        expected_rec_base = {
             'date': 'mydate',
             'host': 'myhost',
             'rule_num': 'myrulenum',
@@ -229,7 +225,24 @@ class TestFilterLog:
             'reason': 'myreason',
             'action': 'myaction',
             'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            'ip_version': 'myipversion'
+        }
+
+        conn = Mock()
+        mocker.patch.object(self.obj, 'conn')
+
+        return rec, expected_rec_base
+
+    def test_digestIPv4_tcp_movesData(self, mocker, setup_ip_rec_and_db_mock):
+        # Arrange
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
+        rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'tcp', 'mylen', 'mysourceip',
+                'mydestip', 'mysport', 'mydport', 'mydatalen', 'mytcpflags', 'myseq', 'myack', 'mywindow', 'myurg',
+                'options']
+
+        expected_rec = {
+            **expected_rec_base,
             'tos': 'mytos',
             'ecn': 'myecn',
             'ttl': 'myttl',
@@ -245,6 +258,7 @@ class TestFilterLog:
             'dport': 'mydport',
             'datalen': 'mydatalen'
         }
+
         expected_restdict = {
             'tcp_flags': 'mytcpflags',
             'seq': 'myseq',
@@ -254,9 +268,6 @@ class TestFilterLog:
             'options': 'myopts'
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
-
         # Act
         self.obj.digest_ipv4(rec, rest)
 
@@ -265,35 +276,15 @@ class TestFilterLog:
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
-    def test_digestIPv4_udp_movesData(self, mocker):
+    def test_digestIPv4_udp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec = {'date': 'mydate',
-               'host': 'myhost',
-               'rule_num': 'myrulenum',
-               'sub_rule': 'mysubrule',
-               'anchor': 'myanchor',
-               'tracker': 'mytracker',
-               'interface': 'myint',
-               'reason': 'myreason',
-               'action': 'myaction',
-               'direction': 'mydirection',
-               'ip_version': 'myipversion'
-               }
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'udp', 'mylen', 'mysourceip',
                 'mydestip', 'mysport', 'mydport', 'mydatalen']
 
         expected_rec = {
-            'date': 'mydate',
-            'host': 'myhost',
-            'rule_num': 'myrulenum',
-            'sub_rule': 'mysubrule',
-            'anchor': 'myanchor',
-            'tracker': 'mytracker',
-            'interface': 'myint',
-            'reason': 'myreason',
-            'action': 'myaction',
-            'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            **expected_rec_base,
             'tos': 'mytos',
             'ecn': 'myecn',
             'ttl': 'myttl',
@@ -312,9 +303,6 @@ class TestFilterLog:
         expected_restdict = {
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
-
         # Act
         self.obj.digest_ipv4(rec, rest)
 
@@ -323,35 +311,15 @@ class TestFilterLog:
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
-    def test_digestIPv4_esp_movesData(self, mocker):
+    def test_digestIPv4_esp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec = {'date': 'mydate',
-               'host': 'myhost',
-               'rule_num': 'myrulenum',
-               'sub_rule': 'mysubrule',
-               'anchor': 'myanchor',
-               'tracker': 'mytracker',
-               'interface': 'myint',
-               'reason': 'myreason',
-               'action': 'myaction',
-               'direction': 'mydirection',
-               'ip_version': 'myipversion'
-               }
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'esp', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
 
         expected_rec = {
-            'date': 'mydate',
-            'host': 'myhost',
-            'rule_num': 'myrulenum',
-            'sub_rule': 'mysubrule',
-            'anchor': 'myanchor',
-            'tracker': 'mytracker',
-            'interface': 'myint',
-            'reason': 'myreason',
-            'action': 'myaction',
-            'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            **expected_rec_base,
             'tos': 'mytos',
             'ecn': 'myecn',
             'ttl': 'myttl',
@@ -368,9 +336,6 @@ class TestFilterLog:
             'datalength': '23'
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
-
         # Act
         self.obj.digest_ipv4(rec, rest)
 
@@ -379,35 +344,15 @@ class TestFilterLog:
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
-    def test_digestIPv4_gre_movesData(self, mocker):
+    def test_digestIPv4_gre_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec = {'date': 'mydate',
-               'host': 'myhost',
-               'rule_num': 'myrulenum',
-               'sub_rule': 'mysubrule',
-               'anchor': 'myanchor',
-               'tracker': 'mytracker',
-               'interface': 'myint',
-               'reason': 'myreason',
-               'action': 'myaction',
-               'direction': 'mydirection',
-               'ip_version': 'myipversion'
-               }
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'gre', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
 
         expected_rec = {
-            'date': 'mydate',
-            'host': 'myhost',
-            'rule_num': 'myrulenum',
-            'sub_rule': 'mysubrule',
-            'anchor': 'myanchor',
-            'tracker': 'mytracker',
-            'interface': 'myint',
-            'reason': 'myreason',
-            'action': 'myaction',
-            'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            **expected_rec_base,
             'tos': 'mytos',
             'ecn': 'myecn',
             'ttl': 'myttl',
@@ -424,9 +369,6 @@ class TestFilterLog:
             'datalength': '23'
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
-
         # Act
         self.obj.digest_ipv4(rec, rest)
 
@@ -435,35 +377,15 @@ class TestFilterLog:
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
-    def test_digestIPv4_ipv6_movesData(self, mocker):
+    def test_digestIPv4_ipv6_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec = {'date': 'mydate',
-               'host': 'myhost',
-               'rule_num': 'myrulenum',
-               'sub_rule': 'mysubrule',
-               'anchor': 'myanchor',
-               'tracker': 'mytracker',
-               'interface': 'myint',
-               'reason': 'myreason',
-               'action': 'myaction',
-               'direction': 'mydirection',
-               'ip_version': 'myipversion'
-               }
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'ipv6', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
 
         expected_rec = {
-            'date': 'mydate',
-            'host': 'myhost',
-            'rule_num': 'myrulenum',
-            'sub_rule': 'mysubrule',
-            'anchor': 'myanchor',
-            'tracker': 'mytracker',
-            'interface': 'myint',
-            'reason': 'myreason',
-            'action': 'myaction',
-            'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            **expected_rec_base,
             'tos': 'mytos',
             'ecn': 'myecn',
             'ttl': 'myttl',
@@ -480,9 +402,6 @@ class TestFilterLog:
             'datalength': '23'
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
-
         # Act
         self.obj.digest_ipv4(rec, rest)
 
@@ -491,35 +410,15 @@ class TestFilterLog:
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
-    def test_digestIPv4_igmp_movesData(self, mocker):
+    def test_digestIPv4_igmp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec = {'date': 'mydate',
-               'host': 'myhost',
-               'rule_num': 'myrulenum',
-               'sub_rule': 'mysubrule',
-               'anchor': 'myanchor',
-               'tracker': 'mytracker',
-               'interface': 'myint',
-               'reason': 'myreason',
-               'action': 'myaction',
-               'direction': 'mydirection',
-               'ip_version': 'myipversion'
-               }
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'igmp', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
 
         expected_rec = {
-            'date': 'mydate',
-            'host': 'myhost',
-            'rule_num': 'myrulenum',
-            'sub_rule': 'mysubrule',
-            'anchor': 'myanchor',
-            'tracker': 'mytracker',
-            'interface': 'myint',
-            'reason': 'myreason',
-            'action': 'myaction',
-            'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            **expected_rec_base,
             'tos': 'mytos',
             'ecn': 'myecn',
             'ttl': 'myttl',
@@ -536,8 +435,38 @@ class TestFilterLog:
             'datalength': '23'
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
+        # Act
+        self.obj.digest_ipv4(rec, rest)
+
+        # Assert
+        assert len(rest) == 0
+        assert rec == expected_rec
+        # self.obj.conn.cursor.execute.assert_called_once()
+
+    def test_digestIPv4_icmp_movesData(self, mocker, setup_ip_rec_and_db_mock):
+        # Arrange
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
+        rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'icmp', 'mylen', 'mysourceip',
+                'mydestip', 'datalength=23']
+
+        expected_rec = {
+            **expected_rec_base,
+            'tos': 'mytos',
+            'ecn': 'myecn',
+            'ttl': 'myttl',
+            'id': 'myid',
+            'offset': 'myoffset',
+            'flags': 'myflags',
+            'proto_id': 'myprotoid',
+            'protocol': 'icmp',
+            'length': 'mylen',
+            'source_ip': 'mysourceip',
+            'dest_ip': 'mydestip',
+        }
+        expected_restdict = {
+            'datalength': '23'
+        }
 
         # Act
         self.obj.digest_ipv4(rec, rest)
@@ -547,35 +476,120 @@ class TestFilterLog:
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
-    def test_digestIPv6_icmp_movesData(self, mocker):
+    def test_digestIPv4_badProto_raisesException(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec = {'date': 'mydate',
-               'host': 'myhost',
-               'rule_num': 'myrulenum',
-               'sub_rule': 'mysubrule',
-               'anchor': 'myanchor',
-               'tracker': 'mytracker',
-               'interface': 'myint',
-               'reason': 'myreason',
-               'action': 'myaction',
-               'direction': 'mydirection',
-               'ip_version': 'myipversion'
-               }
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
+        rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'badproto', 'mylen', 'mysourceip',
+                'mydestip', 'datalength=23']
+
+        expected_rec = {
+            **expected_rec_base,
+            'tos': 'mytos',
+            'ecn': 'myecn',
+            'ttl': 'myttl',
+            'id': 'myid',
+            'offset': 'myoffset',
+            'flags': 'myflags',
+            'proto_id': 'myprotoid',
+            'protocol': 'badproto',
+            'length': 'mylen',
+            'source_ip': 'mysourceip',
+            'dest_ip': 'mydestip',
+        }
+        expected_restdict = {
+        }
+
+        # Act
+        with pytest.raises(Exception):
+            self.obj.digest_ipv4(rec, rest)
+
+        # Assert
+        assert len(rest) == 1
+        assert rec == expected_rec
+        # self.obj.conn.cursor.execute.assert_called_once()
+
+
+    def test_digestIPv6_tcp_movesData(self, mocker, setup_ip_rec_and_db_mock):
+        # Arrange
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
+        rest = ['myclass', 'myflow', 'myhoplimit', 'tcp', 'myprotoid', 'mylen', 'mysourceip',
+                'mydestip', 'mysport', 'mydport', 'mydatalen', 'mytcpflags', 'myseq', 'myack', 'mywindow', 'myurg',
+                'myopts']
+
+        expected_rec = {
+            **expected_rec_base,
+            'class': 'myclass',
+            'flow_label': 'myflow',
+            'hop_limit': 'myhoplimit',
+            'proto_id': 'myprotoid',
+            'protocol': 'tcp',
+            'length': 'mylen',
+            'source_ip': 'mysourceip',
+            'dest_ip': 'mydestip',
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalen': 'mydatalen'
+        }
+        expected_restdict = {
+            'tcp_flags': 'mytcpflags',
+            'seq': 'myseq',
+            'ack': 'myack',
+            'window': 'mywindow',
+            'urg': 'myurg',
+            'options': 'myopts'
+        }
+
+        # Act
+        self.obj.digest_ipv6(rec, rest)
+
+        # Assert
+        assert len(rest) == 0
+        assert rec == expected_rec
+        # self.obj.conn.cursor.execute.assert_called_once()
+
+    def test_digestIPv6_udp_movesData(self, mocker, setup_ip_rec_and_db_mock):
+        # Arrange
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
+        rest = ['myclass', 'myflow', 'myhoplimit', 'udp', 'myprotoid', 'mylen', 'mysourceip',
+                'mydestip', 'mysport', 'mydport', 'mydatalen']
+
+        expected_rec = {
+            **expected_rec_base,
+            'class': 'myclass',
+            'flow_label': 'myflow',
+            'hop_limit': 'myhoplimit',
+            'proto_id': 'myprotoid',
+            'protocol': 'udp',
+            'length': 'mylen',
+            'source_ip': 'mysourceip',
+            'dest_ip': 'mydestip',
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalen': 'mydatalen'
+        }
+        expected_restdict = {
+        }
+
+        # Act
+        self.obj.digest_ipv6(rec, rest)
+
+        # Assert
+        assert len(rest) == 0
+        assert rec == expected_rec
+        # self.obj.conn.cursor.execute.assert_called_once()
+
+    def test_digestIPv6_icmp_movesData(self, mocker, setup_ip_rec_and_db_mock):
+        # Arrange
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
         rest = ['myclass', 'myflow', 'myhoplimit', 'ipv6-icmp', 'myprotoid', 'mylen', 'mysourceip',
                 'mydestip', '']
 
         expected_rec = {
-            'date': 'mydate',
-            'host': 'myhost',
-            'rule_num': 'myrulenum',
-            'sub_rule': 'mysubrule',
-            'anchor': 'myanchor',
-            'tracker': 'mytracker',
-            'interface': 'myint',
-            'reason': 'myreason',
-            'action': 'myaction',
-            'direction': 'mydirection',
-            'ip_version': 'myipversion',
+            **expected_rec_base,
             'class': 'myclass',
             'flow_label': 'myflow',
             'hop_limit': 'myhoplimit',
@@ -588,14 +602,41 @@ class TestFilterLog:
         expected_restdict = {
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
-
         # Act
         self.obj.digest_ipv6(rec, rest)
 
         # Assert
         assert len(rest) == 0
+        assert rec == expected_rec
+        # self.obj.conn.cursor.execute.assert_called_once()
+
+    def test_digestIPv6_badProtocol_raisesException(self, mocker, setup_ip_rec_and_db_mock):
+        # Arrange
+        rec, expected_rec_base = setup_ip_rec_and_db_mock
+
+        rest = ['myclass', 'myflow', 'myhoplimit', 'badproto', 'myprotoid', 'mylen', 'mysourceip',
+                'mydestip', '']
+
+        expected_rec = {
+            **expected_rec_base,
+            'class': 'myclass',
+            'flow_label': 'myflow',
+            'hop_limit': 'myhoplimit',
+            'proto_id': 'myprotoid',
+            'protocol': 'badproto',
+            'length': 'mylen',
+            'source_ip': 'mysourceip',
+            'dest_ip': 'mydestip',
+        }
+        expected_restdict = {
+        }
+
+        # Act
+        with pytest.raises(Exception):
+            self.obj.digest_ipv6(rec, rest)
+
+        # Assert
+        assert len(rest) == 1
         assert rec == expected_rec
         # self.obj.conn.cursor.execute.assert_called_once()
 
