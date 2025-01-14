@@ -1,9 +1,6 @@
 import os
-from unittest.mock import Mock
-
 import psycopg2
 import pytest
-import pytest_mock
 
 from ingest import FilterLog
 
@@ -228,14 +225,16 @@ class TestFilterLog:
             'ip_version': 'myipversion'
         }
 
-        conn = Mock()
-        mocker.patch.object(self.obj, 'conn')
+        mockconn = mocker.MagicMock(name="conn")
+        mockcurs = mocker.MagicMock(name="curs")
+        mockconn.cursor.return_value.__enter__.return_value = mockcurs
+        mocker.patch.object(self.obj, 'conn', new=mockconn)
 
-        return rec, expected_rec_base
+        return rec, expected_rec_base, mockconn, mockcurs
 
     def test_digestIPv4_tcp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'tcp', 'mylen', 'mysourceip',
                 'mydestip', 'mysport', 'mydport', 'mydatalen', 'mytcpflags', 'myseq', 'myack', 'mywindow', 'myurg',
@@ -274,11 +273,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_udp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'udp', 'mylen', 'mysourceip',
                 'mydestip', 'mysport', 'mydport', 'mydatalen']
@@ -309,11 +310,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_esp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'esp', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
@@ -342,11 +345,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_gre_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'gre', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
@@ -375,11 +380,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_ipv6_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'ipv6', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
@@ -408,11 +415,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_igmp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'igmp', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
@@ -441,11 +450,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_icmp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'icmp', 'mylen', 'mysourceip',
                 'mydestip', 'datalength=23']
@@ -474,13 +485,16 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv4_badProto_raisesException(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
-        rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'badproto', 'mylen', 'mysourceip',
+        rest = ['mytos', 'myecn', 'myttl', 'myid', 'myoffset', 'myflags', 'myprotoid', 'badproto', 'mylen',
+                'mysourceip',
                 'mydestip', 'datalength=23']
 
         expected_rec = {
@@ -507,12 +521,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 1
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
-
+        mockcurs.execute.assert_not_called()
+        mockconn.commit.assert_not_called()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv6_tcp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['myclass', 'myflow', 'myhoplimit', 'tcp', 'myprotoid', 'mylen', 'mysourceip',
                 'mydestip', 'mysport', 'mydport', 'mydatalen', 'mytcpflags', 'myseq', 'myack', 'mywindow', 'myurg',
@@ -547,11 +562,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv6_udp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['myclass', 'myflow', 'myhoplimit', 'udp', 'myprotoid', 'mylen', 'mysourceip',
                 'mydestip', 'mysport', 'mydport', 'mydatalen']
@@ -579,11 +596,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv6_icmp_movesData(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['myclass', 'myflow', 'myhoplimit', 'ipv6-icmp', 'myprotoid', 'mylen', 'mysourceip',
                 'mydestip', '']
@@ -608,11 +627,13 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 0
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_called_once()
+        mockconn.commit.assert_called_once()
+        mockconn.rollback.assert_not_called()
 
     def test_digestIPv6_badProtocol_raisesException(self, mocker, setup_ip_rec_and_db_mock):
         # Arrange
-        rec, expected_rec_base = setup_ip_rec_and_db_mock
+        rec, expected_rec_base, mockconn, mockcurs = setup_ip_rec_and_db_mock
 
         rest = ['myclass', 'myflow', 'myhoplimit', 'badproto', 'myprotoid', 'mylen', 'mysourceip',
                 'mydestip', '']
@@ -638,7 +659,9 @@ class TestFilterLog:
         # Assert
         assert len(rest) == 1
         assert rec == expected_rec
-        # self.obj.conn.cursor.execute.assert_called_once()
+        mockcurs.execute.assert_not_called()
+        mockconn.commit.assert_not_called()
+        mockconn.rollback.assert_not_called()
 
     @pytest.mark.skip
     def test_digestFilterlog_IPv6_movesData(self, mocker):
