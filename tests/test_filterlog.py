@@ -152,12 +152,12 @@ class TestFilterLog:
         rest = ['mysport', 'mydport', 'mydatalen', 'mytcpflags', 'myseq', 'myack', 'mywindow', 'myurg', 'myopts']
 
         expected_rec = {
-            'sport': 'mysport',
-            'dport': 'mydport',
-            'datalen': 'mydatalen',
         }
 
         expected_ret = {
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalength': 'mydatalen',
             'tcp_flags': 'mytcpflags',
             'seq': 'myseq',
             'ack': 'myack',
@@ -180,12 +180,12 @@ class TestFilterLog:
         rest = ['mysport', 'mydport', 'mydatalen']
 
         expected_rec = {
-            'sport': 'mysport',
-            'dport': 'mydport',
-            'datalen': 'mydatalen',
         }
 
         expected_ret = {
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalength': 'mydatalen',
         }
 
         # Act
@@ -253,12 +253,12 @@ class TestFilterLog:
             'length': 'mylen',
             'source_ip': 'mysourceip',
             'dest_ip': 'mydestip',
-            'sport': 'mysport',
-            'dport': 'mydport',
-            'datalen': 'mydatalen'
         }
 
         expected_restdict = {
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalength': 'mydatalen',
             'tcp_flags': 'mytcpflags',
             'seq': 'myseq',
             'ack': 'myack',
@@ -297,11 +297,11 @@ class TestFilterLog:
             'length': 'mylen',
             'source_ip': 'mysourceip',
             'dest_ip': 'mydestip',
-            'sport': 'mysport',
-            'dport': 'mydport',
-            'datalen': 'mydatalen'
         }
         expected_restdict = {
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalength': 'mydatalen',
         }
 
         # Act
@@ -543,11 +543,11 @@ class TestFilterLog:
             'length': 'mylen',
             'source_ip': 'mysourceip',
             'dest_ip': 'mydestip',
-            'sport': 'mysport',
-            'dport': 'mydport',
-            'datalen': 'mydatalen'
         }
         expected_restdict = {
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalength': 'mydatalen',
             'tcp_flags': 'mytcpflags',
             'seq': 'myseq',
             'ack': 'myack',
@@ -583,11 +583,11 @@ class TestFilterLog:
             'length': 'mylen',
             'source_ip': 'mysourceip',
             'dest_ip': 'mydestip',
-            'sport': 'mysport',
-            'dport': 'mydport',
-            'datalen': 'mydatalen'
         }
         expected_restdict = {
+            'sport': 'mysport',
+            'dport': 'mydport',
+            'datalength': 'mydatalen',
         }
 
         # Act

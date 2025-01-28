@@ -76,9 +76,9 @@ class FilterLog:
     def digest_tcpudp(self, rec, rest):
 
         rest_dict = {}
-        rec['sport'] = rest.pop(0)
-        rec['dport'] = rest.pop(0)
-        rec['datalen'] = rest.pop(0)
+        rest_dict['sport'] = rest.pop(0)
+        rest_dict['dport'] = rest.pop(0)
+        rest_dict['datalength'] = rest.pop(0)
         return rest_dict
 
     def digest_tcp(self, rec, rest):
